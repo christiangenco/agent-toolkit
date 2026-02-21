@@ -50,6 +50,7 @@ calendly-cli events --status active                   # Upcoming bookings
 | [meta-ads-cli](https://github.com/christiangenco/meta-ads-cli) | Facebook/Instagram campaigns, creatives, audiences | custom (TypeScript) |
 | [tiktok-ads-cli](https://github.com/christiangenco/tiktok-ads-cli) | TikTok campaigns, ad groups, creatives | custom (TypeScript) |
 | [x-ads-cli](https://github.com/christiangenco/x-ads-cli) | X/Twitter campaigns, line items, promoted tweets | custom (TypeScript) |
+| [x-cli](https://github.com/christiangenco/x-cli) | Organic X/Twitter posting, threads, timeline | custom (TypeScript) |
 | [linkedin-cli](https://github.com/christiangenco/linkedin-cli) | LinkedIn campaigns, creatives, audiences | custom (TypeScript) |
 | [dataforseo-cli](https://github.com/christiangenco/dataforseo-cli) | Keyword research, search volume, domain metrics | custom (Ruby) |
 
