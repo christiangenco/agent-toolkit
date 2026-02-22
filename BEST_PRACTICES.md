@@ -184,12 +184,105 @@ tool-cli/
 - `JSON.generate(ok: true, data: ...)` for all output
 - Symlink to `~/bin/` for PATH access
 
+## Credentials & .env
+
+Tools load credentials from a `.env` file in their own directory. There are three patterns:
+
+| Pattern | When to use | Example |
+|---------|-------------|---------|
+| **Symlink to `../.env`** | Tool only needs keys from the shared `~/tools/.env` | `elevenlabs-cli` |
+| **Own `.env` file** | Tool has unique creds not shared with others | `x-cli`, `dataforseo-cli` |
+| **Symlink to `../.credentials/jarvis.env`** | Tool shares creds with the jarvis project | `google-cli`, `contacts-cli` |
+
+**Shared `~/tools/.env`**: Keys used by multiple tools (or single-purpose tools with one key) go here. Individual tools symlink to it:
+
+```bash
+cd ~/tools/my-tool-cli
+ln -s ../.env .env
+```
+
+The `dotenv` loader in `config.ts` reads `.env` from the tool's own directory — the symlink makes it transparently pick up the shared file.
+
+**⚠️ `.env` MUST always be in `.gitignore`.** Symlinks to `.env` will be resolved by git and the actual credential file contents would be committed if not ignored. Every `.gitignore` must include `.env` on its own line.
+
 ## Git & GitHub
 
 - Every tool is its own repo under `christiangenco/tool-cli`
 - Add to `sync.sh` repos table for cross-machine syncing
 - Add to `~/tools/AGENTS.md` for LLM discovery
 - Credentials (`.env` files) are synced separately via `sync.sh creds`
+
+## Adding a New Tool
+
+Complete checklist for creating and registering a new CLI tool:
+
+### 1. Scaffold the project
+
+Follow the TypeScript, Ruby, or Bash template above. Ensure all required files exist: `README.md`, `AGENTS.md`, `.gitignore`, `.env.example`, and the executable entry point.
+
+### 2. Set up credentials
+
+```bash
+# If the key is already in ~/tools/.env (or you're adding it there):
+cd ~/tools/my-tool-cli
+ln -s ../.env .env
+
+# If the tool needs its own .env with unique creds:
+cp .env.example .env
+# Fill in the values
+```
+
+### 3. Make it globally callable
+
+```bash
+# TypeScript (after npm install && npm run build):
+npm link
+
+# Ruby/Bash:
+ln -s ~/tools/my-tool-cli/my-tool-cli ~/bin/my-tool-cli
+```
+
+### 4. Create GitHub repo
+
+```bash
+cd ~/tools/my-tool-cli
+git init
+git add -A
+git commit -m "Initial commit: my-tool-cli"
+
+# Create repo on GitHub (requires gh CLI):
+gh repo create christiangenco/my-tool-cli --public --source=. --push
+```
+
+### 5. Register in sync.sh
+
+Add to the `REPOS` array in `~/tools/sync.sh`:
+```bash
+"my-tool-cli|https://github.com/christiangenco/my-tool-cli.git|main"
+```
+
+If the tool has its own `.env` (not a symlink to `../.env`), also add to `CRED_FILES`:
+```bash
+"my-tool-cli/.env"
+```
+
+If it's a Node/TypeScript tool, add to the `npmdir` loop in `cmd_clone()`.
+
+### 6. Register in ~/tools/AGENTS.md
+
+Add a row to the tool index table (keep alphabetical order):
+```markdown
+| [my-tool-cli](my-tool-cli/) | One-line description |
+```
+
+### 7. Verify
+
+```bash
+my-tool-cli --help          # Globally callable
+git -C ~/tools/my-tool-cli log --oneline  # Has commits
+grep my-tool-cli ~/tools/sync.sh          # In sync script
+grep my-tool-cli ~/tools/AGENTS.md        # In tool index
+```
 
 ## Gold Standard Examples
 

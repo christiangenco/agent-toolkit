@@ -145,12 +145,14 @@ apple-notes-cli create "Title" --body "Content"       # Create note
 
 | Tool | What it does | Install |
 |------|-------------|---------|
+| [remotion-cli](https://github.com/christiangenco/remotion-cli) | Render videos from JSON scene definitions | custom (TypeScript) |
 | [youtube-transcript-cli](https://github.com/christiangenco/youtube-transcript-cli) | Fetch YouTube transcripts | custom (Bash) |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Download YouTube/web video | `brew install yt-dlp` |
 | [ffmpeg](https://ffmpeg.org/) | Video/audio conversion | `brew install ffmpeg` |
 | [humanizer](https://github.com/brandonwise/humanizer) | Detect/remove AI writing patterns | `npm i -g .` in repo |
 
 ```bash
+remotion-cli render scene.json -o output.mp4          # JSON → MP4
 youtube-transcript-cli transcript dQw4w9WgXcQ         # Get transcript
 yt-dlp "https://youtube.com/watch?v=ID"               # Download video
 ffmpeg -i input.mov -c:v libx264 output.mp4           # Convert video
