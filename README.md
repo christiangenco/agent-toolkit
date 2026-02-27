@@ -27,8 +27,10 @@ git clone https://github.com/christiangenco/agent-toolkit ~/tools/agent-toolkit
 | [imessages-cli](https://github.com/christiangenco/imessages-cli) | Read/send iMessages, search history | custom (Ruby, macOS) |
 | [twilio-sms-cli](https://github.com/christiangenco/twilio-sms-cli) | SMS via Twilio + conversation threads | custom + `brew install twilio` |
 | [calendly-cli](https://github.com/christiangenco/calendly-cli) | Manage event types, bookings, availability | custom (Ruby) |
-| [contacts-cli](https://github.com/christiangenco/contacts-cli) | Search local contacts CSV | custom (Ruby) |
+| [contacts-cli](https://github.com/christiangenco/contacts-cli) | Search macOS Contacts.app via AppleScript | custom (Ruby, macOS) |
 | [groove-cli](https://github.com/christiangenco/groove-cli) | Helpdesk inbox triage with Claude | custom (Ruby) |
+| [mailboxes-cli](https://github.com/christiangenco/mailboxes-cli) | Manage email across all your domains via Mailgun Mailboxes | custom (Ruby) |
+| [notify-cli](https://github.com/christiangenco/notify-cli) | macOS + ntfy.sh push notifications (get human attention) | custom (Bash) |
 
 ```bash
 google-cli emails list --limit 5                     # Recent inbox
@@ -50,8 +52,8 @@ calendly-cli events --status active                   # Upcoming bookings
 | [meta-ads-cli](https://github.com/christiangenco/meta-ads-cli) | Facebook/Instagram campaigns, creatives, audiences | custom (TypeScript) |
 | [tiktok-ads-cli](https://github.com/christiangenco/tiktok-ads-cli) | TikTok campaigns, ad groups, creatives | custom (TypeScript) |
 | [x-ads-cli](https://github.com/christiangenco/x-ads-cli) | X/Twitter campaigns, line items, promoted tweets | custom (TypeScript) |
-| [x-cli](https://github.com/christiangenco/x-cli) | Organic X/Twitter posting, threads, timeline | custom (TypeScript) |
-| [linkedin-cli](https://github.com/christiangenco/linkedin-cli) | LinkedIn campaigns, creatives, audiences | custom (TypeScript) |
+| [x-cli](https://github.com/christiangenco/x-cli) | Organic X/Twitter posting, threads, timeline, DMs | custom (TypeScript) |
+| [linkedin](https://github.com/christiangenco/linkedin) | LinkedIn posting and engagement | custom (TypeScript) |
 | [dataforseo-cli](https://github.com/christiangenco/dataforseo-cli) | Keyword research, search volume, domain metrics | custom (Ruby) |
 
 ```bash
@@ -117,12 +119,14 @@ supabase db push                                      # Push migrations
 |------|-------------|---------|
 | [agent-browser](https://github.com/vercel-labs/agent-browser) | Sandboxed browser automation for agents | `npm i -g agent-browser` |
 | [agent-chrome-cli](https://github.com/christiangenco/agent-chrome-cli) | Control user's real Chrome via CDP | custom (JS) |
+| [brave-search-cli](https://github.com/christiangenco/brave-search-cli) | Web, news, and image search via Brave Search API | custom (TypeScript) |
 | [ddgr](https://github.com/jarun/ddgr) | DuckDuckGo search from terminal | `brew install ddgr` |
 
 ```bash
 agent-browser --session s1 open "https://example.com" && agent-browser --session s1 snapshot -c
 agent-chrome-cli --tab t1 snapshot -ic                # Interactive elements in real Chrome
-ddgr --json -n 5 "search query"                       # Web search as JSON
+brave-search-cli search "query" -n 5                  # Web search as JSON
+brave-search-cli news "topic" --freshness pd          # Recent news
 ```
 
 ### macOS Automation
@@ -146,14 +150,27 @@ apple-notes-cli create "Title" --body "Content"       # Create note
 | Tool | What it does | Install |
 |------|-------------|---------|
 | [remotion-cli](https://github.com/christiangenco/remotion-cli) | Render videos from JSON scene definitions | custom (TypeScript) |
+| [elevenlabs-cli](https://github.com/christiangenco/elevenlabs-cli) | ElevenLabs TTS, multi-speaker podcast dialogue | custom (TypeScript) |
+| [gemini-tts-cli](https://github.com/christiangenco/gemini-tts-cli) | Google Gemini TTS with multi-speaker dialogue | custom (TypeScript) |
+| [nanobanana-cli](https://github.com/christiangenco/nanobanana-cli) | Gemini image generation and editing | custom (TypeScript) |
+| [veo-cli](https://github.com/christiangenco/veo-cli) | Google Veo 3.1 video generation (text/image-to-video) | custom (TypeScript) |
+| [youtube-cli](https://github.com/christiangenco/youtube-cli) | YouTube video upload, update, list, stats | custom (TypeScript) |
 | [youtube-transcript-cli](https://github.com/christiangenco/youtube-transcript-cli) | Fetch YouTube transcripts | custom (Bash) |
+| [transistor-cli](https://github.com/christiangenco/transistor-cli) | Transistor.fm podcast hosting: shows, episodes, analytics | custom (TypeScript) |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Download YouTube/web video | `brew install yt-dlp` |
 | [ffmpeg](https://ffmpeg.org/) | Video/audio conversion | `brew install ffmpeg` |
 | [humanizer](https://github.com/brandonwise/humanizer) | Detect/remove AI writing patterns | `npm i -g .` in repo |
 
 ```bash
 remotion-cli render scene.json -o output.mp4          # JSON → MP4
+elevenlabs-cli speak "Hello world" -o hello.mp3       # Text to speech
+elevenlabs-cli dialogue script.json -o podcast.mp3    # Multi-speaker dialogue
+gemini-tts-cli speak "Hello" -o hello.wav             # Gemini TTS
+nanobanana-cli generate "a sunset over mountains"     # Generate image
+veo-cli generate "a cat playing piano"                # Generate video
+youtube-cli upload video.mp4 -t "Title" -d "Desc"    # Upload to YouTube
 youtube-transcript-cli transcript dQw4w9WgXcQ         # Get transcript
+transistor-cli episodes list --show-id 12345          # List podcast episodes
 yt-dlp "https://youtube.com/watch?v=ID"               # Download video
 ffmpeg -i input.mov -c:v libx264 output.mp4           # Convert video
 ```
@@ -240,10 +257,11 @@ Third-party tools use their own auth:
 
 ## Adding a new tool
 
-See [BEST_PRACTICES.md](BEST_PRACTICES.md) for the full template. Quick checklist:
+```bash
+create-tool my-thing              # Scaffold TypeScript tool (default)
+create-tool my-thing --lang ruby  # Or Ruby / Bash
+```
 
-1. Create repo `christiangenco/{name}-cli`
-2. Add README.md, AGENTS.md, .gitignore (always include `.env`), .env.example
-3. Make it globally callable (`npm link` or symlink to `~/bin/`)
-4. Output JSON `{ok, data}` to stdout by default
-5. Add entry to this README and to `sync.sh`
+This creates `~/tools/my-thing-cli/` with all required files (AGENTS.md, README.md, .gitignore, .env.example, executable). Follow the printed checklist to install deps, init git, and register.
+
+See [BEST_PRACTICES.md](BEST_PRACTICES.md) for the full conventions and templates.

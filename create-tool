@@ -1,0 +1,324 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a new CLI tool from the standard template
+# Usage: create-tool <name> [--lang ts|ruby|bash]
+
+usage() {
+  cat <<EOF
+Usage: create-tool <name> [--lang ts|ruby|bash]
+
+Scaffolds a new CLI tool in ~/tools/<name>-cli/ with all required files.
+
+Options:
+  --lang ts      TypeScript (default) — Commander, ESM, dotenv
+  --lang ruby    Ruby — single executable, dotenv gem
+  --lang bash    Bash — single script
+
+After running, follow the printed checklist to finish setup.
+
+Template reference: ~/tools/agent-toolkit/BEST_PRACTICES.md
+EOF
+  exit 0
+}
+
+[[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]] && usage
+
+NAME="$1"
+shift
+LANG="ts"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lang) LANG="$2"; shift 2 ;;
+    *) echo "Unknown option: $1"; exit 1 ;;
+  esac
+done
+
+# Normalize name: strip trailing -cli if provided
+NAME="${NAME%-cli}"
+DIR="$HOME/tools/${NAME}-cli"
+
+if [[ -d "$DIR" ]]; then
+  echo "Error: $DIR already exists"
+  exit 1
+fi
+
+echo "Creating ${NAME}-cli (${LANG})..."
+mkdir -p "$DIR"
+
+# .gitignore (common)
+cat > "$DIR/.gitignore" <<'GITIGNORE'
+.env
+.DS_Store
+GITIGNORE
+
+# .env.example
+cat > "$DIR/.env.example" <<'ENVEX'
+# API_KEY=
+ENVEX
+
+case "$LANG" in
+  ts)
+    cat >> "$DIR/.gitignore" <<'GI'
+node_modules/
+dist/
+GI
+
+    mkdir -p "$DIR/bin" "$DIR/src/commands"
+
+    cat > "$DIR/bin/${NAME}-cli.js" <<EOF
+#!/usr/bin/env node
+import "../dist/cli.js";
+EOF
+    chmod +x "$DIR/bin/${NAME}-cli.js"
+
+    cat > "$DIR/src/config.ts" <<'TS'
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: join(__dirname, "..", ".env") });
+
+// export const API_KEY = process.env.API_KEY;
+// if (!API_KEY) {
+//   console.error("Error: API_KEY is required. Copy .env.example to .env and fill in credentials.");
+//   process.exit(1);
+// }
+TS
+
+    cat > "$DIR/src/cli.ts" <<EOF
+import { Command } from "commander";
+import "./config.js";
+
+const program = new Command();
+
+program
+  .name("${NAME}-cli")
+  .description("TODO: describe ${NAME}-cli")
+  .version("1.0.0");
+
+program
+  .command("example")
+  .description("Example command")
+  .option("--json", "Full JSON output")
+  .action(async (opts) => {
+    console.log(JSON.stringify({ ok: true, data: { message: "hello from ${NAME}-cli" } }));
+  });
+
+program.parseAsync().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});
+EOF
+
+    cat > "$DIR/tsconfig.json" <<'JSON'
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"]
+}
+JSON
+
+    cat > "$DIR/package.json" <<EOF
+{
+  "name": "${NAME}-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "${NAME}-cli": "./bin/${NAME}-cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+EOF
+    ;;
+
+  ruby)
+    cat >> "$DIR/.gitignore" <<'GI'
+vendor/
+.bundle/
+GI
+
+    cat > "$DIR/${NAME}-cli" <<EOF
+#!/usr/bin/env ruby
+require 'json'
+require 'optparse'
+require 'dotenv/load'
+
+def output(data) = puts JSON.generate(data)
+def success(data) = (output(ok: true, data: data); exit 0)
+def error(msg, code = 'ERROR') = (output(ok: false, error: msg, code: code); exit 1)
+
+command = ARGV.shift
+
+case command
+when 'example'
+  success(message: "hello from ${NAME}-cli")
+when '--help', '-h', 'help', nil
+  puts <<~HELP
+    ${NAME}-cli — TODO: describe
+
+    Commands:
+      example    Example command
+
+    Run: ${NAME}-cli <command> --help for details
+  HELP
+  exit 0
+else
+  error("Unknown command: \#{command}", 'USAGE')
+end
+EOF
+    chmod +x "$DIR/${NAME}-cli"
+
+    cat > "$DIR/Gemfile" <<'GF'
+source "https://rubygems.org"
+gem "dotenv"
+gem "json"
+GF
+    ;;
+
+  bash)
+    cat > "$DIR/${NAME}-cli" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<HELP
+Usage: ${0##*/} <command> [args]
+
+Commands:
+  example    Example command
+  --help     Show this help
+HELP
+  exit 0
+}
+
+[[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]] && usage
+
+case "$1" in
+  example)
+    echo '{"ok":true,"data":{"message":"hello"}}'
+    ;;
+  *)
+    echo "{\"ok\":false,\"error\":\"Unknown command: $1\"}" >&2
+    exit 1
+    ;;
+esac
+EOF
+    chmod +x "$DIR/${NAME}-cli"
+    ;;
+
+  *)
+    echo "Unknown language: $LANG (use ts, ruby, or bash)"
+    rm -rf "$DIR"
+    exit 1
+    ;;
+esac
+
+# AGENTS.md
+cat > "$DIR/AGENTS.md" <<EOF
+# ${NAME}-cli
+
+TODO: one-line description.
+
+## Commands
+
+\`\`\`bash
+${NAME}-cli example     # Example command
+\`\`\`
+
+## Examples
+
+\`\`\`bash
+${NAME}-cli example
+\`\`\`
+
+Requires \`.env\` with \`API_KEY\`. See \`.env.example\`.
+EOF
+
+# README.md
+cat > "$DIR/README.md" <<EOF
+# ${NAME}-cli
+
+TODO: describe what this tool does.
+
+## Setup
+
+\`\`\`bash
+cp .env.example .env
+# Fill in credentials
+EOF
+
+case "$LANG" in
+  ts) cat >> "$DIR/README.md" <<'EOF'
+npm install
+npm run build
+npm link
+EOF
+    ;;
+  ruby) cat >> "$DIR/README.md" <<EOF
+bundle install
+ln -s ~/tools/${NAME}-cli/${NAME}-cli ~/bin/${NAME}-cli
+EOF
+    ;;
+  bash) cat >> "$DIR/README.md" <<EOF
+ln -s ~/tools/${NAME}-cli/${NAME}-cli ~/bin/${NAME}-cli
+EOF
+    ;;
+esac
+
+cat >> "$DIR/README.md" <<'EOF'
+```
+
+## Usage
+
+```bash
+# TODO: add examples
+```
+EOF
+
+echo ""
+echo "✅ Created $DIR"
+echo ""
+echo "Next steps:"
+case "$LANG" in
+  ts)
+    echo "  cd $DIR"
+    echo "  npm install && npm run build && npm link"
+    ;;
+  ruby)
+    echo "  cd $DIR"
+    echo "  bundle install"
+    echo "  ln -s $DIR/${NAME}-cli ~/bin/${NAME}-cli"
+    ;;
+  bash)
+    echo "  ln -s $DIR/${NAME}-cli ~/bin/${NAME}-cli"
+    ;;
+esac
+cat <<EOF
+  cp .env.example .env   # fill in creds
+  git init && git add -A && git commit -m "Initial commit: ${NAME}-cli"
+  gh repo create christiangenco/${NAME}-cli --public --source=. --push
+  # Add to ~/tools/sync.sh and ~/tools/AGENTS.md
+EOF
